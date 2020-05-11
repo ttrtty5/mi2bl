@@ -106,12 +106,13 @@ def get_pixel_from_pos(img,uv_pos,uv_wh):
 
 def plane_uv_from_uvpos(img,uv_pos,uv_wh):
     #图片，点坐标，高宽 , 校正plane在图片中的uv
-    scale_w=uv_wh[0]/img.size[0]
+    scale_w=uv_wh[0]/img.size[0]#单像素长宽
     scale_h=uv_wh[1]/img.size[1]
-    from_pos_y=img.size[1] - uv_pos[1] - uv_wh[1]
+    from_pos_y=img.size[1] - uv_pos[1] - uv_wh[1] #y层
     uv = bpy.context.object.data.uv_layers.active #正在使用的uv
+    print("pos: " + str(from_pos_y),str(uv_wh))
     #face=bpy.context.object.data.polygons[0]
-    co_x_offset = 1/img.size[0] * uv_wh[0]
+    co_x_offset = 1/img.size[0] * uv_pos[0]
     co_y_offset = 1/img.size[1] * from_pos_y
     obj = bpy.context.object
     #先向原点缩放，再偏移
@@ -120,3 +121,98 @@ def plane_uv_from_uvpos(img,uv_pos,uv_wh):
             l = obj.data.loops[i]
             uv.data[l.index].uv[0] = uv.data[l.index].uv[0] * scale_w + co_x_offset
             uv.data[l.index].uv[1] = uv.data[l.index].uv[1] * scale_h + co_y_offset
+
+def hex_to_tuple(text):
+    #将hex转tuple
+    r, g, b=text[0:2], text[2:4], text[4:6]
+    rgba=(int(r,16)/255, int(g,16)/255, int(b,16)/255, 1)
+    return rgba
+
+def default_mat_mbcube(texture,folder_path):
+    #,给mb模型初始化材质
+    mat = bpy.data.materials.new(texture)
+    mat.use_nodes=True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    for node in nodes:
+        nodes.remove(node)
+    diffuse_node = nodes.new(type="ShaderNodeBsdfDiffuse")
+    output_node = nodes.new(type='ShaderNodeOutputMaterial')
+    mulrgb = nodes.new(type="ShaderNodeMixRGB")
+    mulrgb.blend_type = 'MULTIPLY'
+    mixrgb = nodes.new(type="ShaderNodeMixRGB")
+
+
+    tex_node = nodes.new(type='ShaderNodeTexImage')
+    if texture not in bpy.data.images:
+        bpy.data.images.load(folder_path +'\\' + texture , check_existing=True)
+    tex_node.image = bpy.data.images[texture]
+    tex_node.interpolation = 'Closest'
+    tex_node.location[0] -= 700
+    links.new(tex_node.outputs[0],mulrgb.inputs[1])
+    
+    #设置参数
+    mulrgb.inputs[0].default_value = 1
+    mulrgb.inputs[2].default_value = (0, 0, 0, 1)#TODO 参数没调
+    mixrgb.inputs[0].default_value = 0
+    mixrgb.inputs[1].default_value = (1, 1, 1, 1)
+    mixrgb.inputs[2].default_value = (0, 0, 0, 1)
+    
+    #link
+    links.new(mulrgb.outputs[0],mixrgb.inputs[1])
+    links.new(mixrgb.outputs[0],diffuse_node.inputs[0])
+    links.new(diffuse_node.outputs[0],output_node.inputs[0])
+
+    #整理节点
+    output_node.location[0] += 200
+    mixrgb.location[0] -= 200
+    mulrgb.location[0] -= 400
+    #bpy.context.object.data.materials.append(mat)
+
+
+
+def cube_uv_from_uvpos():
+    '''创建mb模型的材质和uv'''
+    if timelinesJsonData['name'] == '':
+        mat = bpy.data.materials.new("方块")
+    else:
+        mat = bpy.data.materials.new(timelinesJsonData['name'])
+    
+    mat.use_nodes=True
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+
+    for node in nodes:
+        nodes.remove(node)
+
+    diffuse_node = nodes.new(type="ShaderNodeBsdfDiffuse")
+    output_node = nodes.new(type='ShaderNodeOutputMaterial')
+    mulrgb = nodes.new(type="ShaderNodeMixRGB")
+    mulrgb.blend_type = 'MULTIPLY'
+    mixrgb = nodes.new(type="ShaderNodeMixRGB")
+    
+    if tex:
+        tex_node = nodes.new(type='ShaderNodeTexImage')
+        tex_node.image = bpy.data.images[tex]
+        tex_node.interpolation = 'Closest'
+        tex_node.location[0] -= 700
+        links.new(tex_node.outputs[0],mulrgb.inputs[1])
+    
+    #设置参数
+    mulrgb.inputs[0].default_value = 1
+    mulrgb.inputs[2].default_value = rgb_mul
+    mixrgb.inputs[0].default_value = mix_percent
+    mixrgb.inputs[1].default_value = (1, 1, 1, 1)
+    mixrgb.inputs[2].default_value = mix_color
+    
+    #link
+    links.new(mulrgb.outputs[0],mixrgb.inputs[1])
+    links.new(mixrgb.outputs[0],diffuse_node.inputs[0])
+    links.new(diffuse_node.outputs[0],output_node.inputs[0])
+
+    #整理节点
+    output_node.location[0] += 200
+    mixrgb.location[0] -= 200
+    mulrgb.location[0] -= 400
+    bpy.context.object.data.materials.append(mat)

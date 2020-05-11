@@ -25,6 +25,11 @@ general_icon_from_prevlist → build_state(按钮触发状态) → 运行build_i
 //mbmodel block
 'from'是原点偏移点,然后长宽高lwh为shape['to'][2]-shape['from'][2]
 其实直接就得到了
+//mb block 材质部分
+为了实现材质继承，所以在递归的时候得传个材质参数进去，首先
+材质名字写之前递归里传递贴图名字,然后子级部件里要是有百分比或贴图名字就复制父级修改参数，没有就继承材质
+通过贴图名字还获取材质
+
 //mbmodel plane
 因为不用算方块的uv的lwh，简单的一批，所以我先做这个了
 
@@ -42,3 +47,5 @@ general_icon_from_prevlist → build_state(按钮触发状态) → 运行build_i
 3.生成item后会有F9的操作符弹框(无法修改，因为效率太低了)，不知道怎么隐藏
 
 4.父级有缩放动画，子级有旋转动画时的剪切效应
+
+5.材质的混合百分比的继承问题

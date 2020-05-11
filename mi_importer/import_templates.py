@@ -3,7 +3,7 @@ from json import loads
 import bpy
 from bpy_extras.io_utils import ImportHelper
 from ..Mcprep.MCPREP_OT_spawn_item import spawn_item_from_pixels, spawn_plane_from_pixels
-from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction
+from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube
 from . mi2bl3 import spawn_timelines_obj
 from math import radians
 
@@ -27,7 +27,7 @@ class import_templates(bpy.types.Operator, ImportHelper):
         if not self.filepath:
             self.report({'INFO'},"未选择图片,已返回")
             return {'CANCELLED'}
-        #with open(r"E:\暂存\as1\Chair.miobject",'r')as f:
+
         with open(self.filepath,'r')as f:
             fileData=f.read()
 
@@ -143,17 +143,26 @@ class import_mbmodel(bpy.types.Operator, ImportHelper):
 
         PartName=MbData['name']
         parts = MbData['parts']
+        texture = MbData['texture'] if 'texture' in MbData else ''
         parent=''
-        递归生成部件(parts,folder_path,context, parent)
+        #默认父级材质
+        mat=default_mat_mbcube(texture, folder_path)
+        递归生成部件(parts,folder_path,context, parent, texture)
 
         return {'FINISHED'}
 
 
-def 递归生成部件(parts,folder_path,context,parent):
+def 递归生成部件(parts,folder_path,context,parent, textureName):
     for part in parts:
-        shapes=part['shapes']
+        #防止只是用来存储部件的空shape部件
+        shapes=part['shapes'] if 'shapes' in part else []
         ShapeDirt=[]
+        #part贴图
+        Ptexture = part['texture'] if 'texture' in part else textureName
         for shape in shapes:
+            #shape贴图
+            Stexture = part['texture'] if 'texture' in part else Ptexture
+
             if shape['type'] == 'block':
                 origin_pos = shape['from'] #x, z ,y
                 origin_offset = [ (-origin_pos[2])/16, (-origin_pos[0])/16, origin_pos[1]/16 ] # x, y, z
@@ -166,8 +175,24 @@ def 递归生成部件(parts,folder_path,context,parent):
                     shape['to'][1]-origin_pos[1]]
                 #scale
                 origin_scale = [uv_lwh[0]/16, uv_lwh[1]/16, uv_lwh[2]/16]
-                bpy.context.object.scale=origin_scale
+                bpy.context.object.scale = origin_scale
                 bpy.ops.object.transform_apply(location=True, scale=True)
+
+                #读取变换数据
+                position=[-shape['position'][2]/16, -shape['position'][0]/16, shape['position'][1]/16] if 'position' in shape else [0,0,0]
+                # x , z ,y
+                rotation=[-radians(shape['rotation'][2]), -radians(shape['rotation'][0]), radians(shape['rotation'][1])] if 'rotation' in shape else [0,0,0]
+                scale=[shape['scale'][2], shape['scale'][0], shape['scale'][1]] if 'scale' in shape else [1,1,1]
+                bpy.context.object.location = position
+                bpy.context.object.rotation_euler = rotation
+                bpy.context.object.scale = scale
+                #bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+                #TODO:方块的uv部分
+                if 'texture' or 'color_mix_percent' in shape:
+                    pass
+
+                ShapeDirt.append(bpy.context.object)
             
             if shape['type'] == 'plane':
                 if '3d' in shape:
@@ -180,7 +205,7 @@ def 递归生成部件(parts,folder_path,context,parent):
                     if 'texture' in shape:
                         img=bpy.data.images.load(folder_path +'\\' + shape['texture'] , check_existing=True)
                     else:
-                        img=bpy.data.images.load(folder_path + '\\' +part['texture'], check_existing=True)
+                        img=bpy.data.images.load(folder_path + '\\' + Stexture, check_existing=True)
                     
                     #获取像素
                     alpha_pixels = get_pixel_from_pos(img,shape['uv'],uv_wh)
@@ -238,6 +263,10 @@ def 递归生成部件(parts,folder_path,context,parent):
 
                     ShapeDirt.append(bpy.context.object)
 
+        #当碰到空shape的部件
+        if len(ShapeDirt)==0:
+            bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))
+
         #合并ShapeDirt内的物体
         if len(ShapeDirt)>1:
             bpy.ops.object.select_all(action='DESELECT')
@@ -245,7 +274,7 @@ def 递归生成部件(parts,folder_path,context,parent):
             for shape in ShapeDirt:
                 shape.select_set(True)
             bpy.ops.object.join()
-        bpy.context.object.name=part['name']
+        bpy.context.object.name = part['name']
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
         #读取变换数据
@@ -261,7 +290,7 @@ def 递归生成部件(parts,folder_path,context,parent):
             bpy.context.object.parent=parent
         
         if 'parts' in part:
-            递归生成部件(part['parts'],folder_path,context,bpy.context.object)
+            递归生成部件(part['parts'],folder_path,context,bpy.context.object,Ptexture)
         
         
 
