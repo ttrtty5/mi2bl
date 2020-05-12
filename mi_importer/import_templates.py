@@ -3,7 +3,7 @@ from json import loads
 import bpy
 from bpy_extras.io_utils import ImportHelper
 from ..Mcprep.MCPREP_OT_spawn_item import spawn_item_from_pixels, spawn_plane_from_pixels
-from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube
+from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube, mb_mat_uvpos
 from . mi2bl3 import spawn_timelines_obj
 from math import radians
 
@@ -159,16 +159,20 @@ def 递归生成部件(parts,folder_path,context,parent, textureName):
         ShapeDirt=[]
         #part贴图
         Ptexture = part['texture'] if 'texture' in part else textureName
+        if 'texture' in part or 'color_mix_percent' in part or 'color_alpha' in part or 'color_brightness' in part:
+            part_mat = bpy.data.materials[Ptexture].copy()
+            part_mat.name=Ptexture+ '_' +part['name']
+            mb_mat_uvpos(part_mat,part)
+        
         for shape in shapes:
             #shape贴图
-            Stexture = part['texture'] if 'texture' in part else Ptexture
-
+            Stexture = shape['texture'] if 'texture' in shape else Ptexture
             if shape['type'] == 'block':
                 origin_pos = shape['from'] #x, z ,y
                 origin_offset = [ (-origin_pos[2])/16, (-origin_pos[0])/16, origin_pos[1]/16 ] # x, y, z
                 bpy.ops.mesh.primitive_cube_add(size=1, enter_editmode=False, location=[-0.5, -0.5, 0.5])
                 bpy.ops.object.transform_apply(location=True)
-                bpy.context.object.location=origin_offset
+                bpy.context.object.location = origin_offset
 
                 uv_lwh=[shape['to'][2]-origin_pos[2], 
                     shape['to'][0]-origin_pos[0], 
@@ -188,9 +192,25 @@ def 递归生成部件(parts,folder_path,context,parent, textureName):
                 bpy.context.object.scale = scale
                 #bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-                #TODO:方块的uv部分
-                if 'texture' or 'color_mix_percent' in shape:
-                    pass
+                #TODO:方块的材质uv部分
+                if 'texture' in shape or 'color_mix_percent' in shape or 'color_alpha' in shape or 'color_brightness' in shape:
+                    img=bpy.data.images.load(folder_path + '\\' + Stexture, check_existing=True)
+                    if (Ptexture+ '_' +part['name']) in bpy.data.materials:
+                        shape_mat = bpy.data.materials[Ptexture+ '_' +part['name']].copy()
+                    else:
+                        shape_mat = bpy.data.materials[Stexture].copy()
+                    
+                    mb_mat_uvpos(shape_mat,shape)
+                    bpy.context.object.data.materials.append(shape_mat)
+                    #开阴影混合等
+                    bpy.context.object.active_material.blend_method = 'BLEND'
+                    bpy.context.object.active_material.shadow_method = 'CLIP'
+                else:
+                    bpy.context.object.data.materials.append(bpy.data.materials[Stexture])
+                
+                image_size = bpy.data.images[Stexture].size
+                mb_cube_uv(uv_lwh,shape['uv'], image_size)
+
 
                 ShapeDirt.append(bpy.context.object)
             
