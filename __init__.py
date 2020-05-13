@@ -1,7 +1,7 @@
 bl_info = {
     "name": "MI联动组件",
     "author": "ttrtty5",
-    "version": (0, 0, 7),
+    "version": (0, 0, 8),
     "blender": (2, 81, 0),
     "location": "View3D > Create > MI联动组件",
     "warning": "",

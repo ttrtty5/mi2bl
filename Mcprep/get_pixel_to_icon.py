@@ -53,7 +53,6 @@ def get_pixel_generate_allimg(img,num_of_divisions):
     for y in range(0,num_of_divisions[1]):
         for x in range(0,num_of_divisions[0]):
             tile_pos=(x,y)#tile位置
-            print(tile_pos)
             pixel=get_tile_pixels(tile_xy,width,img_sources_pixel,tile_pos)
 
             out_img=bpy.data.images.new(name=img.name+"_"+str(x)+"-"+str(y),
@@ -146,6 +145,9 @@ def default_mat_mbcube(texture,folder_path):
     dif_mix_emiss = nodes.new(type="ShaderNodeMixShader")
     mix_alpha = nodes.new(type="ShaderNodeMixShader")
     alpha_node = nodes.new(type="ShaderNodeBsdfTransparent")
+    img_alpha_node = nodes.new(type="ShaderNodeBsdfTransparent")
+    tex_mix_alpha = nodes.new(type="ShaderNodeMixShader")
+    tex_rer = nodes.new(type="NodeReroute")#布局点
 
     
     #命名部分
@@ -162,7 +164,11 @@ def default_mat_mbcube(texture,folder_path):
     tex_node.image = bpy.data.images[texture]
     tex_node.interpolation = 'Closest'
     tex_node.location[0] -= 700
+    tex_rer.location[0] -= 420
+    tex_rer.location[1] += 84
     links.new(tex_node.outputs[0],mulrgb.inputs[1])
+    links.new(tex_node.outputs[1],tex_rer.inputs[0])
+    links.new(tex_rer.outputs[0],tex_mix_alpha.inputs[0])
     
 
     #设置参数
@@ -182,10 +188,12 @@ def default_mat_mbcube(texture,folder_path):
     links.new(mixrgb.outputs[0],emiss.inputs[0])
     links.new(dif_mix_emiss.outputs[0],mix_alpha.inputs[1])
     links.new(alpha_node.outputs[0],mix_alpha.inputs[2])
-    links.new(mix_alpha.outputs[0],output_node.inputs[0])
+    links.new(tex_mix_alpha.outputs[0],output_node.inputs[0])
+    links.new(img_alpha_node.outputs[0],tex_mix_alpha.inputs[1])
+    links.new(mix_alpha.outputs[0],tex_mix_alpha.inputs[2])
 
     #整理节点
-    output_node.location[0] += 600
+    output_node.location[0] += 750
     emiss.location[1] -= 150
     dif_mix_emiss.location[0] += 200
     mix_alpha.location[0] += 400
@@ -193,6 +201,10 @@ def default_mat_mbcube(texture,folder_path):
     alpha_node.location[1] -= 150
     mixrgb.location[0] -= 200
     mulrgb.location[0] -= 400
+    img_alpha_node.location[0] += 400
+    img_alpha_node.location[1] += 75
+    tex_mix_alpha.location[0] += 600
+    tex_mix_alpha.location[1] += 150
     #bpy.context.object.data.materials.append(mat)
 
 
@@ -237,40 +249,60 @@ def mb_cube_uv(uv_lwh, uvpos, size):
     obj = bpy.context.object
     uv = bpy.context.object.data.uv_layers.active #正在使用的uv
 
+    for num in range(5):
+        bpy.context.object.data.uv_layers.active.data[num*4].uv=[1,0]
+        bpy.context.object.data.uv_layers.active.data[num*4+1].uv=[1,1]
+        bpy.context.object.data.uv_layers.active.data[num*4+2].uv=[0,1]
+        bpy.context.object.data.uv_layers.active.data[num*4+3].uv=[0,0]
+
     #front
-    bpy.context.object.data.uv_layers.active.data[0].uv=[1,0]
-    bpy.context.object.data.uv_layers.active.data[1].uv=[1,1]
-    bpy.context.object.data.uv_layers.active.data[2].uv=[0,1]
-    bpy.context.object.data.uv_layers.active.data[3].uv=[0,0]
+    # bpy.context.object.data.uv_layers.active.data[0].uv=[1,0]
+    # bpy.context.object.data.uv_layers.active.data[1].uv=[1,1]
+    # bpy.context.object.data.uv_layers.active.data[2].uv=[0,1]
+    # bpy.context.object.data.uv_layers.active.data[3].uv=[0,0]
     for i in face_front.loop_indices:
         l = obj.data.loops[i]
         uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[1] + pixel_unit_x*uvpos[0]
         uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[2] + pixel_unit_y*pos_offset_y
 
     #right
-    bpy.context.object.data.uv_layers.active.data[4].uv=[1,0]
-    bpy.context.object.data.uv_layers.active.data[5].uv=[1,1]
-    bpy.context.object.data.uv_layers.active.data[6].uv=[0,1]
-    bpy.context.object.data.uv_layers.active.data[7].uv=[0,0]
+    # bpy.context.object.data.uv_layers.active.data[4].uv=[1,0]
+    # bpy.context.object.data.uv_layers.active.data[5].uv=[1,1]
+    # bpy.context.object.data.uv_layers.active.data[6].uv=[0,1]
+    # bpy.context.object.data.uv_layers.active.data[7].uv=[0,0]
     for i in face_right.loop_indices:
         l = obj.data.loops[i]
         uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[0] + pixel_unit_x*(uvpos[0] - uv_lwh[0])
         uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[2] + pixel_unit_y*pos_offset_y
     #back
-    bpy.context.object.data.uv_layers.active.data[8].uv=[1,0]
-    bpy.context.object.data.uv_layers.active.data[9].uv=[1,1]
-    bpy.context.object.data.uv_layers.active.data[10].uv=[0,1]
-    bpy.context.object.data.uv_layers.active.data[11].uv=[0,0]
+    # bpy.context.object.data.uv_layers.active.data[8].uv=[1,0]
+    # bpy.context.object.data.uv_layers.active.data[9].uv=[1,1]
+    # bpy.context.object.data.uv_layers.active.data[10].uv=[0,1]
+    # bpy.context.object.data.uv_layers.active.data[11].uv=[0,0]
     for i in face_back.loop_indices:
         l = obj.data.loops[i]
         uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[1] + pixel_unit_x*(uvpos[0]+uv_lwh[0]+uv_lwh[1])
         uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[2] + pixel_unit_y*pos_offset_y
     #left
-    bpy.context.object.data.uv_layers.active.data[12].uv=[1,0]
-    bpy.context.object.data.uv_layers.active.data[13].uv=[1,1]
-    bpy.context.object.data.uv_layers.active.data[14].uv=[0,1]
-    bpy.context.object.data.uv_layers.active.data[15].uv=[0,0]
+    # bpy.context.object.data.uv_layers.active.data[12].uv=[1,0]
+    # bpy.context.object.data.uv_layers.active.data[13].uv=[1,1]
+    # bpy.context.object.data.uv_layers.active.data[14].uv=[0,1]
+    # bpy.context.object.data.uv_layers.active.data[15].uv=[0,0]
     for i in face_left.loop_indices:
         l = obj.data.loops[i]
         uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[0] + pixel_unit_x*(uvpos[0]+uv_lwh[1])
         uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[2] + pixel_unit_y*pos_offset_y
+    #down
+    for i in face_down.loop_indices:
+        l = obj.data.loops[i]
+        uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[1] + pixel_unit_x*(uvpos[0]+uv_lwh[1])
+        uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[0] + pixel_unit_y*(pos_offset_y+uv_lwh[2])
+    #up
+    bpy.context.object.data.uv_layers.active.data[20].uv=[0,1]
+    bpy.context.object.data.uv_layers.active.data[21].uv=[0,0]
+    bpy.context.object.data.uv_layers.active.data[22].uv=[1,0]
+    bpy.context.object.data.uv_layers.active.data[23].uv=[1,1]
+    for i in face_up.loop_indices:
+        l = obj.data.loops[i]
+        uv.data[l.index].uv[0] = uv.data[l.index].uv[0] / size[0] * uv_lwh[1] + pixel_unit_x*uvpos[0]
+        uv.data[l.index].uv[1] = uv.data[l.index].uv[1]/ size[1] * uv_lwh[0] + pixel_unit_y*(pos_offset_y+uv_lwh[2])
