@@ -3,7 +3,7 @@ from json import loads
 import bpy
 from bpy_extras.io_utils import ImportHelper
 from ..Mcprep.MCPREP_OT_spawn_item import spawn_item_from_pixels, spawn_plane_from_pixels
-from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube, mb_mat_uvpos
+from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube, mb_mat_uvpos, mb_cube_uv
 from . mi2bl3 import spawn_timelines_obj
 from math import radians
 
@@ -159,9 +159,11 @@ def 递归生成部件(parts,folder_path,context,parent, textureName):
         ShapeDirt=[]
         #part贴图
         Ptexture = part['texture'] if 'texture' in part else textureName
+                 
         if 'texture' in part or 'color_mix_percent' in part or 'color_alpha' in part or 'color_brightness' in part:
-            part_mat = bpy.data.materials[Ptexture].copy()
-            part_mat.name=Ptexture+ '_' +part['name']
+            bpy.data.images.load(folder_path + '\\' + Ptexture, check_existing=True)
+            part_mat = bpy.data.materials[textureName].copy()
+            part_mat.name = Ptexture
             mb_mat_uvpos(part_mat,part)
         
         for shape in shapes:

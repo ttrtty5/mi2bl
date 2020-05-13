@@ -1,7 +1,7 @@
 bl_info = {
     "name": "MI联动组件",
     "author": "ttrtty5",
-    "version": (0, 0, 7),
+    "version": (0, 0, 9),
     "blender": (2, 81, 0),
     "location": "View3D > Create > MI联动组件",
     "warning": "",
@@ -40,31 +40,7 @@ class TTR_PT_UI(bpy.types.Panel):
         row.operator('object.spawn_item_file')
 
         row = box.row()
-        label=box.label(text="多item图:")
-        row = box.row()
-        #if context.window_manager.mi2bl.active_image!="":
-        if bpy.data.window_managers['WinMan'].mi2bl.img_num>0:
-            item_image_list = row.prop(context.window_manager.mi2bl,"active_image",text="",icon='RENDERLAYERS')
-            row.operator('mi2bl.delete_preview_item_list',text="",icon="PANEL_CLOSE")
         
-        row.operator('mi2bl.item_cut_button')
-
-        if context.window_manager.mi2bl.UI_state:
-            column = box.row()
-            row = column.row(align=True)
-            sub = row.row(align=True)
-            sub.scale_y = 6
-            sub.operator('mi2bl.previous_item', text='', icon='TRIA_LEFT')
-            sub = sub.row(align=True)
-            sub.scale_y = 0.17
-            sub.template_icon_view(context.window_manager.mi2bl, 
-                'assets_files',show_labels=True, 
-                scale_popup=2)
-            sub = sub.row(align=True)
-            sub.scale_y = 6
-            sub.operator('mi2bl.next_item', text='', icon='TRIA_RIGHT')
-            row = box.row()
-            row.operator('mi2bl.spawn_item_from_image')
 
         row = layout.row()
         row.label(text='转换功能')
