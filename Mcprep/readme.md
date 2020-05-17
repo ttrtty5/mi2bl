@@ -1,11 +1,11 @@
-MI2BL
+###MI2BL
 
-本插件内使用以下框架的代码
-Mcprep -用于生成立体网格item
-PIL -用于生成item预览
+本插件内使用以下框架的代码  
+Mcprep -用于生成立体网格item  
+PIL -用于生成item预览  
 
-
-bl_idname = 'mi2bl.xxx'
+防止重复注册报错，所有类id改到以下前缀  
+bl_idname = 'mi2bl.xxx'  
 
 todo路线图 某人脑袋比较容易秀逗，所以写个路线图
 

@@ -40,7 +40,6 @@ class TTR_PT_UI(bpy.types.Panel):
         row.operator('object.spawn_item_file')
 
         row = box.row()
-        
 
         row = layout.row()
         row.label(text='转换功能')
