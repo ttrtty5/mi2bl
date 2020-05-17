@@ -6,8 +6,9 @@
 然后是上手mi后所知道的基础，也能帮助你快速上手blender，更别说还有这个插件的辅助
 
 至此，希望大家能做出更好的作品
-<p style="text-align:right;margin-right:170px">--ttrtty5</p>
-## [开发进度](https://github.com/ttrtty5/mi2bl/tree/master/Mcprep )  
-## [反馈页面](https://ttrtty5.github.io/mi2bl/ )  
-提issues里也行  
+<p style="text-align:right;margin-right:170px">--ttrtty5</p>  
+
+## [开发进度](https://github.com/ttrtty5/mi2bl/tree/master/Mcprep "进度文档")  
+## [反馈页面](https://ttrtty5.github.io/mi2bl/ "反馈")  
+问题提issues里也行  
 交流群: 607079116
