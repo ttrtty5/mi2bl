@@ -55,7 +55,7 @@ class 载入图片进行分割(bpy.types.Operator,ImportHelper):
             if image.name in bpy.data.images:
                 image.reload()
             name=image.name
-            self.item_info[name] = (image,self.x_cut_num,self.Y_cut_num)
+            self.item_info[name] = (name,self.x_cut_num,self.Y_cut_num)
             preview_collections['main'][name]=bpy.utils.previews.new()
             preview_collections['info'][name]=[]
             image_num=len(self.image_list)
@@ -122,12 +122,10 @@ class item_switch_right(bpy.types.Operator):
 from .MCPREP_OT_spawn_item import spawn_item_from_pixels
 from .get_pixel_to_icon import get_tile_pixels, item_uv_correction
 class spawn_item_from_image(bpy.types.Operator):
-    """从选定的item来成item立体网格物体"""
+    """从选定的item来成item立体网格物体(物体大小为1)"""
     bl_idname = 'mi2bl.spawn_item_from_image'
     bl_label = "生成"
     bl_options = {'REGISTER', 'UNDO'}
-
-    
     size: bpy.props.FloatProperty(
         name="大小",
         default=1.0,
@@ -165,11 +163,12 @@ class spawn_item_from_image(bpy.types.Operator):
     def execute(self,context):
         item_name=int(bpy.context.window_manager.mi2bl.assets_files)
         image_name=bpy.context.window_manager.mi2bl.active_image
-        img, x_num, y_num = 载入图片进行分割.item_info[image_name]
+        imgname, x_num, y_num = 载入图片进行分割.item_info[image_name]
 
         if image_name not in bpy.data.images:
-            self.report({'INFO'},"图片"+item_name+"丢失")
+            self.report({'INFO'},"图片"+image_name+"丢失")
             return {'FINISHED'}
+        img = bpy.data.images[imgname]
 
         from_pos=divmod(item_name, x_num)#要转换的item坐标 (y, x)
         to_pos=(from_pos[1], y_num - from_pos[0] - 1) #(x, y)
@@ -180,7 +179,7 @@ class spawn_item_from_image(bpy.types.Operator):
         alpha_pixels = get_tile_pixels(tile_xy, width, pixels, to_pos)
         
         obj, state = spawn_item_from_pixels(context, self.max_pixels, self.thickness, self.threshold,
-            self.transparency,img , alpha_pixels, tile_xy)
+            self.transparency, img, alpha_pixels, tile_xy)
 
         item_uv_correction(obj, x_num, y_num, to_pos)
 
@@ -190,6 +189,75 @@ class spawn_item_from_image(bpy.types.Operator):
         bpy.ops.object.transform_apply(scale=True, location=False)
         bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
 
+        obj.name=image_name + '_%s'%item_name
+        obj.data.name=image_name + '_%s'%item_name
+        return {'FINISHED'}
+
+class spawn_item_from_image_pixelsize(bpy.types.Operator):
+    """生成的item的像素大小为0.1"""
+    bl_idname = 'mi2bl.spawn_item_from_image_pixelsize'
+    bl_label = "像素比例生成"
+    bl_options = {'REGISTER', 'UNDO'}
+    thickness: bpy.props.FloatProperty(
+        name="厚度",
+        default=1.0,
+        min=0.0,
+        description="物体的厚度（稍后可以在修改器中更改）")
+    transparency: bpy.props.BoolProperty(
+        name="删除透明面",
+        description="透明像素在渲染后将是透明的",
+        default=True)
+    threshold: bpy.props.FloatProperty(
+        name="透明阈值",
+        description="1.0 =零容差，不会生成透明像素",
+        default=0.5,
+        min=0.0,
+        max=1.0)
+    scale_uvs: bpy.props.FloatProperty(
+        name="UV缩放",
+        default=0.75,
+        description="缩放生成的item的各个UV面")
+    max_pixels: bpy.props.IntProperty(
+        name="最大像素",
+        default=50000,
+        min=1,
+        description="如果所选图像包含的像素数多于给定数量，则图像将按比例缩小")
+    
+    @classmethod
+    def poll(cls, context):
+        return 载入图片进行分割.outside_item != [] and context.mode == 'OBJECT'
+    
+    def execute(self,context):
+        item_name=int(bpy.context.window_manager.mi2bl.assets_files)
+        image_name=bpy.context.window_manager.mi2bl.active_image
+        imgname, x_num, y_num = 载入图片进行分割.item_info[image_name]
+
+        if image_name not in bpy.data.images:
+            self.report({'INFO'},"图片"+image_name+"丢失")
+            return {'FINISHED'}
+        img = bpy.data.images[imgname]
+
+        from_pos=divmod(item_name, x_num)#要转换的item坐标 (y, x)
+        to_pos=(from_pos[1], y_num - from_pos[0] - 1) #(x, y)
+        
+        pixels=list(img.pixels)
+        width = img.size[1]
+        tile_xy=(int(img.size[0] / x_num), int(img.size[1] / y_num))
+        alpha_pixels = get_tile_pixels(tile_xy, width, pixels, to_pos)
+        
+        obj, state = spawn_item_from_pixels(context, self.max_pixels, self.thickness, self.threshold,
+            self.transparency, img, alpha_pixels, tile_xy)
+
+        item_uv_correction(obj, x_num, y_num, to_pos)
+
+        # 应用其他设置，如整体对象比例和uv面比例
+        obj.scale[0] *= (tile_xy[0] / 20)
+        obj.scale[1] *= (tile_xy[1] / 20)
+        bpy.ops.object.transform_apply(scale=True, location=False)
+        bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
+
+        obj.name=image_name + '_%s'%item_name
+        obj.data.name=image_name + '_%s'%item_name
         return {'FINISHED'}
 
 
@@ -318,7 +386,8 @@ classes=(
     delete_preview_item_list,
     spawn_item_from_image,
     item_switch_left,
-    item_switch_right
+    item_switch_right,
+    spawn_item_from_image_pixelsize
 )
 # main存储每张图片preview集合
 # info存储main内preview集合内对应所有所加载的图片的被分割的每个icon的对象集合，用于获取icon_id
