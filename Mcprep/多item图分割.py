@@ -188,6 +188,7 @@ class spawn_item_from_image(bpy.types.Operator):
             obj.scale[i] *= 0.5 * self.size
         bpy.ops.object.transform_apply(scale=True, location=False)
         bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
+        obj.location = bpy.context.scene.cursor.location # 移动到3D游标上
 
         obj.name=image_name + '_%s'%item_name
         obj.data.name=image_name + '_%s'%item_name
@@ -255,7 +256,7 @@ class spawn_item_from_image_pixelsize(bpy.types.Operator):
         obj.scale[1] *= (tile_xy[1] / 20)
         bpy.ops.object.transform_apply(scale=True, location=False)
         bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
-
+        obj.location = bpy.context.scene.cursor.location # 移动到3D游标上
         obj.name=image_name + '_%s'%item_name
         obj.data.name=image_name + '_%s'%item_name
         return {'FINISHED'}
