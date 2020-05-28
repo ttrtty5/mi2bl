@@ -55,7 +55,7 @@ class 载入图片进行分割(bpy.types.Operator,ImportHelper):
             if image.name in bpy.data.images:
                 image.reload()
             name=image.name
-            self.item_info[name] = (image,self.x_cut_num,self.Y_cut_num)
+            self.item_info[name] = (name,self.x_cut_num,self.Y_cut_num)
             preview_collections['main'][name]=bpy.utils.previews.new()
             preview_collections['info'][name]=[]
             image_num=len(self.image_list)
@@ -165,11 +165,12 @@ class spawn_item_from_image(bpy.types.Operator):
     def execute(self,context):
         item_name=int(bpy.context.window_manager.mi2bl.assets_files)
         image_name=bpy.context.window_manager.mi2bl.active_image
-        img, x_num, y_num = 载入图片进行分割.item_info[image_name]
+        imgname, x_num, y_num = 载入图片进行分割.item_info[image_name]
 
         if image_name not in bpy.data.images:
-            self.report({'INFO'},"图片"+item_name+"丢失")
+            self.report({'INFO'},"图片"+image_name+"丢失")
             return {'FINISHED'}
+        img = bpy.data.images[imgname]
 
         from_pos=divmod(item_name, x_num)#要转换的item坐标 (y, x)
         to_pos=(from_pos[1], y_num - from_pos[0] - 1) #(x, y)
@@ -180,7 +181,7 @@ class spawn_item_from_image(bpy.types.Operator):
         alpha_pixels = get_tile_pixels(tile_xy, width, pixels, to_pos)
         
         obj, state = spawn_item_from_pixels(context, self.max_pixels, self.thickness, self.threshold,
-            self.transparency,img , alpha_pixels, tile_xy)
+            self.transparency, img, alpha_pixels, tile_xy)
 
         item_uv_correction(obj, x_num, y_num, to_pos)
 
@@ -190,6 +191,8 @@ class spawn_item_from_image(bpy.types.Operator):
         bpy.ops.object.transform_apply(scale=True, location=False)
         bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
 
+        obj.name=image_name + '_%s'%item_name
+        obj.data.name=image_name + '_%s'%item_name
         return {'FINISHED'}
 
 

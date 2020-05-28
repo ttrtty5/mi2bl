@@ -519,62 +519,66 @@ def spawn_item_from_pixels(context, max_pixels, thickness, threshold,
 
     # 材质和纹理部分
     # 待办事项: 在这里使用generate函数
-    mat = bpy.data.materials.new(name)
-    mat.name = name
+    # 如果贴图名字在材质中有，那就用这个材质，不再新建
+    if name in bpy.data.materials:
+        mat = bpy.data.materials[name]
+    
+    else:
+        mat = bpy.data.materials.new(name)
+        mat.name = name
+        # 用生成材质替换？
+        engine = bpy.context.scene.render.engine
+        if engine == 'BLENDER_RENDER' or engine == 'BLENDER_GAME':
+            tex = bpy.data.textures.new(name, type = 'IMAGE')
+            tex.image = image
+            mat.specular_intensity = 0
+            mtex = mat.texture_slots.add()
+            mtex.texture = tex
+            tex.name = name
+            tex.use_interpolation = 0
+            tex.use_mipmap = 0
+            tex.filter_type = 'BOX'
+            tex.filter_size = 0.1
+            if transparency is True:
+                mat.use_transparency = 1
+                mat.alpha = 0
+                mat.texture_slots[0].use_map_alpha = 1
+        elif engine=='CYCLES' or engine=='BLENDER_EEVEE':
+            mat.use_nodes = True
+            nodes = mat.node_tree.nodes
+            links = mat.node_tree.links
+            for node in nodes:
+                nodes.remove(node)
 
-    # 用生成材质替换？
-    engine = bpy.context.scene.render.engine
-    if engine == 'BLENDER_RENDER' or engine == 'BLENDER_GAME':
-        tex = bpy.data.textures.new(name, type = 'IMAGE')
-        tex.image = image
-        mat.specular_intensity = 0
-        mtex = mat.texture_slots.add()
-        mtex.texture = tex
-        tex.name = name
-        tex.use_interpolation = 0
-        tex.use_mipmap = 0
-        tex.filter_type = 'BOX'
-        tex.filter_size = 0.1
-        if transparency is True:
-            mat.use_transparency = 1
-            mat.alpha = 0
-            mat.texture_slots[0].use_map_alpha = 1
-    elif engine=='CYCLES' or engine=='BLENDER_EEVEE':
-        mat.use_nodes = True
-        nodes = mat.node_tree.nodes
-        links = mat.node_tree.links
-        for node in nodes:
-            nodes.remove(node)
+            diffuse_node = nodes.new(type="ShaderNodeBsdfDiffuse")
+            tex_node = nodes.new(type='ShaderNodeTexImage')
+            output_node = nodes.new(type='ShaderNodeOutputMaterial')
+            tex_node.image = image
+            tex_node.interpolation = 'Closest'
 
-        diffuse_node = nodes.new(type="ShaderNodeBsdfDiffuse")
-        tex_node = nodes.new(type='ShaderNodeTexImage')
-        output_node = nodes.new(type='ShaderNodeOutputMaterial')
-        tex_node.image = image
-        tex_node.interpolation = 'Closest'
+            if transparency == 0:
+                links.new(tex_node.outputs[0], diffuse_node.inputs[0])
+                links.new(diffuse_node.outputs[0], output_node.inputs[0])
 
-        if transparency == 0:
-            links.new(tex_node.outputs[0], diffuse_node.inputs[0])
-            links.new(diffuse_node.outputs[0], output_node.inputs[0])
+                diffuse_node.location[0] -= 200
+                diffuse_node.location[1] -= 100
+                tex_node.location[0] -= 400
+                output_node.location[0] += 200
+            else:
+                transp_node = nodes.new(type='ShaderNodeBsdfTransparent')
+                mix_node = nodes.new(type='ShaderNodeMixShader')
+                links.new(tex_node.outputs[0], diffuse_node.inputs[0])
+                links.new(diffuse_node.outputs[0], mix_node.inputs[2])
+                links.new(transp_node.outputs[0], mix_node.inputs[1])
+                links.new(tex_node.outputs[1], mix_node.inputs[0])
+                links.new(mix_node.outputs[0], output_node.inputs[0])
 
-            diffuse_node.location[0] -= 200
-            diffuse_node.location[1] -= 100
-            tex_node.location[0] -= 400
-            output_node.location[0] += 200
-        else:
-            transp_node = nodes.new(type='ShaderNodeBsdfTransparent')
-            mix_node = nodes.new(type='ShaderNodeMixShader')
-            links.new(tex_node.outputs[0], diffuse_node.inputs[0])
-            links.new(diffuse_node.outputs[0], mix_node.inputs[2])
-            links.new(transp_node.outputs[0], mix_node.inputs[1])
-            links.new(tex_node.outputs[1], mix_node.inputs[0])
-            links.new(mix_node.outputs[0], output_node.inputs[0])
-
-            transp_node.location[0] -= 200
-            transp_node.location[1] += 100
-            diffuse_node.location[0] -= 200
-            diffuse_node.location[1] -= 100
-            tex_node.location[0] -= 400
-            output_node.location[0] += 200
+                transp_node.location[0] -= 200
+                transp_node.location[1] += 100
+                diffuse_node.location[0] -= 200
+                diffuse_node.location[1] -= 100
+                tex_node.location[0] -= 400
+                output_node.location[0] += 200
 
     # 最终对象已更新
     if thickness > 0:
