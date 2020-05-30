@@ -5,7 +5,7 @@ if "bpy" in locals():
     importlib.reload(多item图分割)
 else:
     import bpy
-#    from . import ()
+    from . import (ui,)
     from .Mcprep import(
         MCPREP_OT_spawn_item,
         多item图分割
@@ -13,11 +13,17 @@ else:
     from .mi_importer import(
         import_templates,
         )
+    from .extra import(
+        extra,
+        )
+
 
 module_list = (
     MCPREP_OT_spawn_item,
     多item图分割,
-    import_templates
+    import_templates,
+    ui,
+    extra
     )
 
 def register():

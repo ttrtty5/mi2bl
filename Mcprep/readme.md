@@ -6,6 +6,8 @@ PIL -用于生成item预览
 
 防止重复注册报错，所有类id改到以下前缀  
 bl_idname = 'mi2bl.xxx'  
+其他功能类
+bl_idname = 'mi2bl.other_xxx'  
 
 todo路线图 某人脑袋比较容易秀逗，所以写个路线图
 

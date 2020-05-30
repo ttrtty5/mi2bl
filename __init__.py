@@ -1,7 +1,7 @@
 bl_info = {
     "name": "MI联动组件",
     "author": "ttrtty5",
-    "version": (0, 0, 9),
+    "version": (0, 1, 0),
     "blender": (2, 81, 0),
     "location": "View3D > Create > MI联动组件",
     "warning": "",
@@ -16,48 +16,16 @@ import bpy
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty
 import importlib
-#from mi2bl import load_modules
 
-
+#批量加载包模块,但不知道为什么reload并没有什么效果
 if "load_modules" in locals():
 	importlib.reload(load_modules)
 else:
 	from . import load_modules
 
-
-class TTR_PT_UI(bpy.types.Panel):
-    #bl_idname = 'TTR_UI'
-    bl_label = 'MI联动组件'
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'Create'
-    
-    def draw(self,context):
-        layout = self.layout
-        box = layout.box()
-        label = box.label(text="单item图:")
-        row = box.row()
-        row.operator('object.spawn_item_file')
-
-        row = box.row()
-
-        row = layout.row()
-        row.label(text='转换功能')
-        row = layout.row()
-        row.operator('mi2bl.import_miobject')
-        row = layout.row()
-        row.operator('mi2bl.import_mbmodel')
-        row = layout.row()
-        row.label(text='未完成功能')
-        #row = layout.row()
-        #row.operator('object.ttr_do_1')
-        row = layout.row()
-        row.operator('export_test.rigiddata')
-        row = layout.row()
-        row.operator('object.ttr_do_2')
-        
-
+# 以下是拿来当吉祥物的函数,有用的全扔extra文件里了
 class TTR_do_1(bpy.types.Operator):
+    '''It's just an example, 哈哈哈'''
     bl_idname = 'object.ttr_do_1'
     bl_label = '例子'
     
@@ -68,14 +36,13 @@ class TTR_do_1(bpy.types.Operator):
     '''
     
     def execute(self,context):
-        self.report({'INFO'},'0')
+        self.report({'INFO'},'hhh')
         return {'FINISHED'}
 
 
 def write_some_data(context, filepath, use_some_setting):
-    print("running write_some_data...")
     f = open(filepath, 'w', encoding='utf-8')
-    f.write("Hello World \n%s" % use_some_setting)
+    f.write("你不会看见缓存清理能用, 以为我这个做完了吧 \n%s" % use_some_setting)
     f.close()
 
     return {'FINISHED'}
@@ -94,41 +61,12 @@ class ExportRigidData(bpy.types.Operator,ExportHelper):
     )
 
     def execute(self, context):
-        return write_some_data(context, self.filepath, '123')
+        return write_some_data(context, self.filepath, '那你是真的憨批.jpg')
 
-class TTR_do_2(bpy.types.Operator):
-    bl_idname = 'object.ttr_do_2'
-    bl_label = '缓存清除'
-    
-    '''
-    @classmethod
-    def poll(cls,context):
-        return context.active_object.location.x < 0
-    '''
-    
-    def execute(self,context):
-        for block in bpy.data.meshes:
-            if block.users == 0:
-                bpy.data.meshes.remove(block)
 
-        for block in bpy.data.materials:
-            if block.users == 0:
-                bpy.data.materials.remove(block)
-
-        for block in bpy.data.textures:
-            if block.users == 0:
-                bpy.data.textures.remove(block)
-
-        for block in bpy.data.images:
-            if block.users == 0:
-                bpy.data.images.remove(block)
-        self.report({'INFO'},"缓存已清除")
-        return {'FINISHED'}
 
 classes=(
     TTR_do_1,
-    TTR_do_2,
-    TTR_PT_UI,
     ExportRigidData
 )
 

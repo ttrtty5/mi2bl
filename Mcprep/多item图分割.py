@@ -130,31 +130,37 @@ class spawn_item_from_image(bpy.types.Operator):
         name="大小",
         default=1.0,
         min=0.001,
-        description="物品的blender单位的大小")
+        description="物品的blender单位的大小",
+        options={'HIDDEN'})
     thickness: bpy.props.FloatProperty(
         name="厚度",
         default=1.0,
         min=0.0,
-        description="物体的厚度（稍后可以在修改器中更改）")
+        description="物体的厚度（稍后可以在修改器中更改）", 
+        options={'HIDDEN'})
     transparency: bpy.props.BoolProperty(
         name="删除透明面",
         description="透明像素在渲染后将是透明的",
-        default=True)
+        default=True, 
+        options={'HIDDEN'})
     threshold: bpy.props.FloatProperty(
         name="透明阈值",
         description="1.0 =零容差，不会生成透明像素",
         default=0.5,
         min=0.0,
-        max=1.0)
+        max=1.0, 
+        options={'HIDDEN'})
     scale_uvs: bpy.props.FloatProperty(
         name="UV缩放",
         default=0.75,
-        description="缩放生成的item的各个UV面")
+        description="缩放生成的item的各个UV面", 
+        options={'HIDDEN'})
     max_pixels: bpy.props.IntProperty(
         name="最大像素",
         default=50000,
         min=1,
-        description="如果所选图像包含的像素数多于给定数量，则图像将按比例缩小")
+        description="如果所选图像包含的像素数多于给定数量，则图像将按比例缩小", 
+        options={'HIDDEN'})
     
     @classmethod
     def poll(cls, context):
@@ -203,26 +209,31 @@ class spawn_item_from_image_pixelsize(bpy.types.Operator):
         name="厚度",
         default=1.0,
         min=0.0,
-        description="物体的厚度（稍后可以在修改器中更改）")
+        description="物体的厚度（稍后可以在修改器中更改）", 
+        options={'HIDDEN'})
     transparency: bpy.props.BoolProperty(
         name="删除透明面",
         description="透明像素在渲染后将是透明的",
-        default=True)
+        default=True, 
+        options={'HIDDEN'})
     threshold: bpy.props.FloatProperty(
         name="透明阈值",
         description="1.0 =零容差，不会生成透明像素",
         default=0.5,
         min=0.0,
-        max=1.0)
+        max=1.0, 
+        options={'HIDDEN'})
     scale_uvs: bpy.props.FloatProperty(
         name="UV缩放",
         default=0.75,
-        description="缩放生成的item的各个UV面")
+        description="缩放生成的item的各个UV面", 
+        options={'HIDDEN'})
     max_pixels: bpy.props.IntProperty(
         name="最大像素",
         default=50000,
         min=1,
-        description="如果所选图像包含的像素数多于给定数量，则图像将按比例缩小")
+        description="如果所选图像包含的像素数多于给定数量，则图像将按比例缩小", 
+        options={'HIDDEN'})
     
     @classmethod
     def poll(cls, context):
@@ -380,6 +391,10 @@ class options(PropertyGroup):
         description = 'active_image中的图片数量',
         default = 0
         )
+    extra_UI_state: BoolProperty(
+        name = 'extra面板显示',
+        description = '按钮状态',
+        default = False)
 
 classes=(
     载入图片进行分割,
@@ -396,11 +411,11 @@ preview_collections = {}
 def register():
     import bpy.utils.previews
     global preview_collections
-    if "preview_collections" not in dir():
+    if 'preview_collections' not in dir():
         preview_collections={} #del后会导致第二次注册报错提示没声明变量
     #pcoll = bpy.utils.previews.new()
-    preview_collections["main"] = {}
-    preview_collections["info"] = {}
+    preview_collections['main'] = {}
+    preview_collections['info'] = {}
 
     for cls in classes:
         bpy.utils.register_class(cls)
@@ -409,9 +424,9 @@ def register():
 
 def unregister():
     global preview_collections
-    if preview_collections["main"] !={}:
-        for pcoll in  preview_collections["main"]:
-            bpy.utils.previews.remove(preview_collections["main"][pcoll])
+    if preview_collections['main'] !={}:
+        for pcoll in  preview_collections['main']:
+            bpy.utils.previews.remove(preview_collections['main'][pcoll])
     del preview_collections
     载入图片进行分割.image_list=[]
     载入图片进行分割.outside_item=[]
