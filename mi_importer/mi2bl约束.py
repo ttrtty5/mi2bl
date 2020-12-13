@@ -3,42 +3,6 @@ import bpy
 from math import radians, pow
 
 
-
-def 提取父级节点树(MiJsonData):
-    ParentTreeInfo={}#ParentTreeInfo={子节点:父节点}
-    for object in MiJsonData["timelines"]:
-        ParentTreeInfo[object["id"]]=object["parent"]
-    #print(ParentTreeInfo)
-
-    ParentTree={}#ParentTree={父节点:子节点}
-    for object in MiJsonData["timelines"]:
-        if object['type'] not in ('cube','item','folder'):
-            continue
-        id=object["id"]
-        parent=object["parent"]
-        if parent in ParentTree:
-            ParentTree[parent].update({id:None})
-            continue
-        ParentTree[parent]={id:None}
-
-    def 遍历字典返回(id,value,location):
-        for 子id in location:
-            if location[子id] != None:
-                遍历字典返回(id,value,location[子id])
-            if 子id==id:
-                location[子id]=value
-                del ParentTree[id]
-
-    while len(ParentTree)>1:
-        for obj in list(ParentTree):
-            if obj=='root':
-                continue
-            print(obj)
-            遍历字典返回(obj,ParentTree[obj],ParentTree['root'])
-    if len(ParentTree)<1:
-        ParentTree['root']=None
-    return ParentTree
-
 def 提取对应id的坐标(MiJsonData):
     MiIdtoPos={}
     for object in MiJsonData["timelines"]:
@@ -117,7 +81,7 @@ def 读取cube坐标并应用(timelinesJsonData):
     bpy.context.object.location[2] -= rot_point[1]/16#z
     bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
     
-    #把default_values设置成-1帧
+    #把default_values设置成0帧
     obj_default_pos=timelinesJsonData["default_values"]
     obj_default_pos_x=-obj_default_pos["POS_X"]/16 if "POS_X" in obj_default_pos.keys() else 0
     obj_default_pos_y=-obj_default_pos["POS_Y"]/16 if "POS_Y" in obj_default_pos.keys() else 0
@@ -133,15 +97,22 @@ def 读取cube坐标并应用(timelinesJsonData):
         POS_Y=-MiObj[KeyNum]["POS_Y"]/16 if "POS_Y" in MiObj[KeyNum].keys() else 0
         POS_Z=MiObj[KeyNum]["POS_Z"]/16 if "POS_Z" in MiObj[KeyNum].keys() else 0
     
+        ROT_X=-MiObj[KeyNum]["ROT_X"] if "ROT_X" in MiObj[KeyNum].keys() else 0
+        ROT_Y=-MiObj[KeyNum]["ROT_Y"] if "ROT_Y" in MiObj[KeyNum].keys() else 0
+        ROT_Z=MiObj[KeyNum]["ROT_Z"] if "ROT_Z" in MiObj[KeyNum].keys() else 0
+    
         SCA_X=MiObj[KeyNum]["SCA_X"] if "SCA_X" in MiObj[KeyNum].keys() else 1
         SCA_Y=MiObj[KeyNum]["SCA_Y"] if "SCA_Y" in MiObj[KeyNum].keys() else 1
         SCA_Z=MiObj[KeyNum]["SCA_Z"] if "SCA_Z" in MiObj[KeyNum].keys() else 1
         
         bpy.context.object.location=[POS_Y, POS_X, POS_Z]
-        #bpy.context.object.keyframe_insert(data_path="location", frame=int(KeyNum)+1)
+        bpy.context.object.keyframe_insert(data_path="location", frame=int(KeyNum)+1)
         #设置关键帧
+        bpy.context.object.rotation_euler = [radians(ROT_Y),radians(ROT_X),radians(ROT_Z)]
+        bpy.context.object.keyframe_insert(data_path="rotation_euler", frame=int(KeyNum)+1)
+
         bpy.context.object.scale = [SCA_Y,SCA_X,SCA_Z]
-        #bpy.context.object.keyframe_insert(data_path="scale", frame=int(KeyNum)+1)
+        bpy.context.object.keyframe_insert(data_path="scale", frame=int(KeyNum)+1)
     '''
     mi的矩阵运算顺序是先缩放再旋转
     而bl的齐次坐标的顺序没法改，是先旋转再缩放，缩放会影响旋转
@@ -276,7 +247,9 @@ def 通过Id设Parent(timelinesJsonData):
     id=timelinesJsonData["id"]
     ParentId=timelinesJsonData["parent"]
     if ParentId in bpy.data.objects:
-        bpy.data.objects[id].parent = bpy.data.objects[ParentId]
+        constraint = bpy.data.objects[id].constraints.new('COPY_TRANSFORMS')
+        constraint.mix_mode = 'BEFORE'
+        constraint.target = bpy.data.objects[ParentId]
     else:
         print('mi2bl:模型文件中存在无法识别的物体，请联系开发者')
 
@@ -317,41 +290,6 @@ def 判断键内有无子集(dict, MiObjectJson):
             判断键内有无子集(dict[object], MiObjectJson)
 
 
-def main():
-    with open("E:\暂存\方块.miobject","r")as f:
-        MiObjectData=f.read()
-    MiObjectJson = json.loads(MiObjectData)
-    #创建物体，并读取坐标和缩放
-    for timelinesData in MiObjectJson["timelines"]:
-        if timelinesData["type"]=="folder":
-            读取folder坐标并应用(timelinesData)
-        if timelinesData["type"]=="cube":
-            读取cube坐标并应用(timelinesData)
-        if timelinesData["type"]=="item":
-            读取item坐标并应用(timelinesData)
-    #创建通过父级查找子级的字典
-    ParentTree=提取父级节点树(MiObjectJson)
-    dict=ParentTree['root']
-    
-    #应用缩放，并将缩放传给子级
-    应用缩放并传给子级(dict)
-    
-    #绑定父级
-    for timelinesData in MiObjectJson["timelines"]:
-        if timelinesData["type"] not in ("folder","cube"):
-            continue
-        if timelinesData["parent"]!="root":
-            通过Id设Parent(timelinesData)
-    
-    #开始旋转
-    判断键内有无子集(dict)
-        
-    #恢复命名
-    global NameDict
-    for nnn123 in NameDict:
-        bpy.data.objects[nnn123].name=NameDict[nnn123]
-
-
 def 应用缩放并传给子级(dict):
     for obj in dict:
         if dict[obj]==None:
@@ -388,26 +326,13 @@ def spawn_timelines_obj(MiObjectJson, 恢复命名):
             读取camera坐标并应用(timelinesData)
             return 0
     
-    #创建通过父级查找子级的字典
-    ParentTree=提取父级节点树(MiObjectJson)
-    dict=ParentTree['root']
-    
-    if dict==None:
-        return 0
-    #应用缩放，并将缩放传给子级
-    应用缩放并传给子级(dict)
-    
     #绑定父级
     for timelinesData in MiObjectJson['timelines']:
         if timelinesData['type'] not in ('folder', 'cube', 'item'):
             continue
         if timelinesData['parent']!="root":
             通过Id设Parent(timelinesData)
-            
 
-    #开始旋转
-    判断键内有无子集(dict, MiObjectJson)
-    
     #恢复命名
     if 恢复命名:
         global NameDict

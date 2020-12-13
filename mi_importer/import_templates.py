@@ -5,6 +5,7 @@ from bpy_extras.io_utils import ImportHelper
 from ..Mcprep.MCPREP_OT_spawn_item import spawn_item_from_pixels, spawn_plane_from_pixels
 from ..Mcprep.get_pixel_to_icon import get_tile_pixels, item_uv_correction,default_mat_mbcube, mb_mat_uvpos, mb_cube_uv
 from . mi2bl3 import spawn_timelines_obj
+# from . mi2bl约束 import spawn_timelines_obj
 from math import radians
 
 class import_templates(bpy.types.Operator, ImportHelper):
@@ -17,6 +18,11 @@ class import_templates(bpy.types.Operator, ImportHelper):
     filter_glob: bpy.props.StringProperty(
         default="*.miobject",
         options={'HIDDEN'})
+    
+    restore_naming: bpy.props.BoolProperty(
+        name = '恢复命名',
+        description = '调试功能, 不恢复名字以查看id',
+        default = True)
 
     @classmethod
     def poll(cls, context):
@@ -25,7 +31,7 @@ class import_templates(bpy.types.Operator, ImportHelper):
     
     def execute(self,context):
         if not self.filepath:
-            self.report({'INFO'},"未选择图片,已返回")
+            self.report({'INFO'},"未选择文件,已返回")
             return {'CANCELLED'}
 
         with open(self.filepath,'r')as f:
@@ -64,8 +70,8 @@ class import_templates(bpy.types.Operator, ImportHelper):
                 item_id = obj['id']
                 tex_id = obj['item']['tex']
                 slot = int(obj['item']['slot'])
-                x_num, y_num=ResourceDict[tex_id]['item_sheet_size']
-
+                x_num, y_num=ResourceDict[tex_id]['item_sheet_size'] if 'item_sheet_size' in ResourceDict[tex_id] else [1,1]
+                
                 img=bpy.data.images[tex_id]
 
                 from_pos=divmod(slot, x_num)#要转换的item坐标 (y, x)
@@ -94,18 +100,18 @@ class import_templates(bpy.types.Operator, ImportHelper):
         
 
         bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
-        #将当前活动集合设置为场景集合
+        # 将当前活动集合设置为场景集合
         if 'obj' not in bpy.context.view_layer.layer_collection.children:
             coll=bpy.data.collections.new('obj')
             bpy.context.view_layer.active_layer_collection.collection.children.link(coll)
         
+        # 设置当前活动集合设置
         bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection.children['obj']
-        #设置当前活动集合设置
 
-        #生成obj
-        spawn_timelines_obj(MiTemplatesData)
+        # 将temp中的物体复制一份，并添加动画坐标等属性
+        spawn_timelines_obj(MiTemplatesData, self.restore_naming)
         
-        #恢复贴图命名
+        # 恢复贴图命名
         for res in ResourceDict:
             img = ResourceDict[res]
             bpy.data.images[img['id']].name = img['filename']

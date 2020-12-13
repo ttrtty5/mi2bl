@@ -47,8 +47,8 @@ general_icon_from_prevlist → build_state(按钮触发状态) → 运行build_i
 读取alpha通道问题能通过pil库提升速度(懒得)
 像上面例子的图片，修改uv的时候会遍历128*128*4的数组，所以也很慢，看以后能不能通过c来重写(当然是看有没有其他大佬来写了)
 
-3.生成item后会有F9的操作符弹框(无法修改，因为效率太低了)，不知道怎么隐藏
+3.生成item后会有F9的操作符弹框(无法修改，因为效率太低了)，不知道怎么隐藏 (√)
 
-4.父级有缩放动画，子级有旋转动画时的剪切效应
+4.父级有缩放动画，子级有旋转动画时的剪切效应 T[非均匀缩放](https://docs.blender.org/manual/zh-hans/dev/scene_layout/object/editing/parent.html#known-limitations)
 
-5.材质的混合百分比的继承问题
+5.父级物体材质的混合百分比的继承问题

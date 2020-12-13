@@ -35,13 +35,13 @@ class 载入图片进行分割(bpy.types.Operator,ImportHelper):
     x_cut_num: bpy.props.IntProperty(
         name="水平切刀数",
         default=2,
-        min=2,
+        min=1,
         description="该数值决定了图片在水平方向被分割后的数量")
 
     Y_cut_num: bpy.props.IntProperty(
         name="竖直切刀数",
         default=2,
-        min=2,
+        min=1,
         description="该数值决定了图片在竖直方向被分割后的数量")
 
     @classmethod
