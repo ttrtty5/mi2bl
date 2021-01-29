@@ -35,6 +35,96 @@ class other_cache_clean(bpy.types.Operator):
         self.report({'INFO'},'ok')
         return {'FINISHED'}
 
+class other_set_origin(bpy.types.Operator):
+    '''一次性脚本'''
+    bl_idname = 'mi2bl.other_set_origin'
+    bl_label = '设置曲线原点'
+
+    def execute(self,context):
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.curve.de_select_last()
+        bpy.ops.view3d.snap_cursor_to_selected()
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.object.origin_set(type='ORIGIN_CURSOR', center='MEDIAN')
+
+        return {'FINISHED'}
+
+from bpy_extras.io_utils import ExportHelper,ImportHelper
+import json
+class other_export_tkey(bpy.types.Operator, ExportHelper):
+    '''导出关键帧'''
+    bl_idname = 'mi2bl.other_export_tkey'
+    bl_label = 'ttr导出关键帧'
+    #过滤其他文件，只选择*.Tkeyframe
+    filter_glob: bpy.props.StringProperty(
+        default="*.Tkeyframe",
+        options={'HIDDEN'})
+    filename_ext='.Tkeyframe'
+    def execute(self,context):
+        keyframe_dirt = {}
+        for fc in context.object.animation_data.action.fcurves:
+            if fc.select:
+                for key in fc.keyframe_points:
+                    keyframe_dirt[str(key.co.x)]={'pos':key.co[:],
+                    'handle_left':key.handle_left[:],
+                    'handle_right':key.handle_right[:],
+                    }
+        with open(self.filepath,"w+")as f:
+            f.write(json.dumps(keyframe_dirt, indent='	', ensure_ascii=False))
+        #print(keyframe_dirt)
+        del keyframe_dirt
+        self.report({'INFO'}, "我他妈当场喵喵喵?") 
+        return {'FINISHED'}
+
+class other_import_tkey(bpy.types.Operator, ImportHelper):
+    '''导出关键帧'''
+    bl_idname = 'mi2bl.other_import_tkey'
+    bl_label = 'ttr导入关键帧'
+    #过滤其他文件，只选择*.Tkeyframe
+    filter_glob: bpy.props.StringProperty(
+        default="*.Tkeyframe",
+        options={'HIDDEN'})
+    def execute(self,context):
+        with open(self.filepath,'r')as f:
+            keyframe_dirt = json.loads(f.read())
+
+        for fc in context.object.animation_data.action.fcurves:
+            if fc.select:
+                for key in keyframe_dirt:
+                    new_key = fc.keyframe_points.insert(context.scene.frame_current+keyframe_dirt[key]['pos'][0],value=keyframe_dirt[key]['pos'][1])
+                    new_key.handle_left = keyframe_dirt[key]['handle_left']
+                    new_key.handle_right = keyframe_dirt[key]['handle_right']
+                    
+        self.report({'INFO'}, "我他妈当场喵喵喵?") 
+        del keyframe_dirt
+        return {'FINISHED'}
+
+
+class fcurve2keyframe(bpy.types.Operator):
+    '''将选择通道上的函数曲线转为关键帧'''
+    bl_idname = 'mi2bl.other_fcurve2keyframe'
+    bl_label = '函数曲线转关键帧'
+
+    def execute(self,context):
+        if context.object == None:
+            self.report({'INFO'},'无活动对象')
+            return {'FINISHED'}
+        elif not hasattr(context.object.animation_data,'action'):
+            self.report({'INFO'},'活动对象无通道')
+            return {'FINISHED'}
+
+        fcurves = context.object.animation_data.action.fcurves
+        for fc in fcurves:
+            if fc.select:
+                fc.convert_to_keyframes(context.scene.frame_start,context.scene.frame_end)
+        return {'FINISHED'}
+
+def add_fcurve2keyframe(self, context):
+    '''在图片编辑器里添加一个按钮'''
+    layout = self.layout
+    col=layout.column(align=True)
+    col.operator('mi2bl.other_fcurve2keyframe')
+
 ### 动力学物体全局禁用启用部分 ###
 class 生成动力学集合(bpy.types.Operator):
     '''不知道为什么，找不到别人有写过这种功能,只好自己写了\n大概是用于在k帧的时候禁用所有的布料软体的模拟'''
@@ -333,14 +423,21 @@ classes=(
     贴图重映射,
     测试用ops,
     物体居中空物体,
-    ExportDataOperator
+    ExportDataOperator,
+    fcurve2keyframe,
+    other_set_origin,
+    other_export_tkey,
+    other_import_tkey
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.OUTLINER_MT_context_menu.append(add_ExportDataOperator_button)
+    bpy.types.GRAPH_MT_key.append(add_fcurve2keyframe)
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
+    bpy.types.OUTLINER_MT_context_menu.remove(add_ExportDataOperator_button)
+    bpy.types.GRAPH_MT_key.remove(add_fcurve2keyframe)

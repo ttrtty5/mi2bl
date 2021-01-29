@@ -391,10 +391,25 @@ class options(PropertyGroup):
         description = 'active_image中的图片数量',
         default = 0
         )
+    # UI面板变量
+    mesh_UI: BoolProperty(
+        name = '建模',
+        description = '显示建模面板',
+        default = True)
+    convert_UI: BoolProperty(
+        name = '转换',
+        description = '显示转换面板',
+        default = False)
+    notok_UI: BoolProperty(
+        name = '未完成',
+        description = '显示未完成面板',
+        default = False)
     extra_UI_state: BoolProperty(
         name = 'extra面板显示',
         description = '按钮状态',
         default = False)
+
+    
 
 classes=(
     载入图片进行分割,

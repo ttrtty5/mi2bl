@@ -3,17 +3,19 @@ import importlib
 if "bpy" in locals():
     importlib.reload(MCPREP_OT_spawn_item)
     importlib.reload(多item图分割)
+    importlib.reload(ui)
+    importlib.reload(extra)
 else:
     import bpy
     from . import (ui,)
-    from .Mcprep import(
+    from . Mcprep import(
         MCPREP_OT_spawn_item,
-        多item图分割
+        多item图分割,
         )
-    from .mi_importer import(
+    from . mi_importer import(
         import_templates,
         )
-    from .extra import(
+    from . extra import(
         extra,
         )
 

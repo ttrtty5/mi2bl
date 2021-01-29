@@ -1,8 +1,8 @@
 bl_info = {
     "name": "MI联动组件",
     "author": "ttrtty5",
-    "version": (0, 1, 0),
-    "blender": (2, 81, 0),
+    "version": (0, 2, 0),
+    "blender": (2, 91, 0),
     "location": "View3D > Create > MI联动组件",
     "warning": "",
     "description": "转换Mine-Imator的数据为blender的模型",
@@ -12,16 +12,11 @@ bl_info = {
     "category": "3D View"
 }
 
+
 import bpy
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty
 import importlib
-
-#批量加载包模块,但不知道为什么reload并没有什么效果
-if "load_modules" in locals():
-	importlib.reload(load_modules)
-else:
-	from . import load_modules
 
 # 以下是拿来当吉祥物的函数,有用的全扔extra文件里了
 class TTR_do_1(bpy.types.Operator):
@@ -69,8 +64,21 @@ classes=(
     TTR_do_1,
     ExportRigidData
 )
+'''
+    # 批量加载包模块,但不知道为什么reload并没有什么效果
+    if "bpy" in locals():
+        print('cs0')
+        importlib.reload(load_modules)
+    else:
+        print('cs1')
+        from . import load_modules
+'''
+# 解决办法,加载两次,因为在init里无法靠"bpy" in locals()来判断是否是重载行为
+from . import load_modules
 
 def register():
+    importlib.reload(load_modules)
+        
     for cls in classes:
         bpy.utils.register_class(cls)
     load_modules.register()
