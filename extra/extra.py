@@ -1,4 +1,22 @@
 import bpy
+from bpy_extras.io_utils import ExportHelper,ImportHelper
+import json, os
+from ..Mcprep.skin18217 import SkinConverting
+
+class skinconverting(bpy.types.Operator, ImportHelper):
+    '''将1.7版本皮肤转换为1.8版本'''
+    bl_idname = 'mi2bl.skinconverting'
+    bl_label = '皮肤版本转换'
+    #过滤其他文件，只选择*.png
+    filter_glob: bpy.props.StringProperty(
+        default="*.png",
+        options={'HIDDEN'})
+    filename_ext='.png'
+    def execute(self,context):
+        SkinConverting(self.filepath)
+        self.report({'INFO'}, "图片已存储到"+self.filepath.replace('.png','_18.png')) 
+        return {'FINISHED'}
+
 
 class other_cache_clean(bpy.types.Operator):
     bl_idname = 'mi2bl.other_cache_clean'
@@ -35,6 +53,7 @@ class other_cache_clean(bpy.types.Operator):
         self.report({'INFO'},'ok')
         return {'FINISHED'}
 
+
 class other_set_origin(bpy.types.Operator):
     '''一次性脚本'''
     bl_idname = 'mi2bl.other_set_origin'
@@ -49,8 +68,25 @@ class other_set_origin(bpy.types.Operator):
 
         return {'FINISHED'}
 
-from bpy_extras.io_utils import ExportHelper,ImportHelper
-import json
+
+class other_bake_sound_T(bpy.types.Operator,ImportHelper):
+    '''rt'''
+    bl_idname = 'mi2bl.other_bake_sound'
+    bl_label = 'ttr烘焙曲线并添加预览'
+    filter_glob: bpy.props.StringProperty(
+        default="*.mp3",
+        options={'HIDDEN'})
+    def execute(self,context):
+        temp_t = bpy.context.area.ui_type
+        bpy.context.area.ui_type = 'FCURVES'
+        bpy.ops.graph.sound_bake(filepath=self.filepath)
+        dirnames = os.path.split(self.filepath)
+        bpy.context.area.ui_type = 'SEQUENCE_EDITOR'
+        bpy.ops.sequencer.sound_strip_add(filepath=self.filepath, directory=dirnames[0], files=[{"name":dirnames[1], "name":dirnames[1]}], frame_start=0, channel=1)
+        bpy.context.area.ui_type = temp_t
+        return {'FINISHED'}
+
+
 class other_export_tkey(bpy.types.Operator, ExportHelper):
     '''导出关键帧'''
     bl_idname = 'mi2bl.other_export_tkey'
@@ -88,13 +124,17 @@ class other_import_tkey(bpy.types.Operator, ImportHelper):
         with open(self.filepath,'r')as f:
             keyframe_dirt = json.loads(f.read())
 
+        
+        act_bone = context.object.data.bones.active.name if context.object.type == 'ARMATURE' else ''
+        print(act_bone)
         for fc in context.object.animation_data.action.fcurves:
-            if fc.select:
-                for key in keyframe_dirt:
-                    new_key = fc.keyframe_points.insert(context.scene.frame_current+keyframe_dirt[key]['pos'][0],value=keyframe_dirt[key]['pos'][1])
-                    new_key.handle_left = keyframe_dirt[key]['handle_left']
-                    new_key.handle_right = keyframe_dirt[key]['handle_right']
-                    
+            if act_bone == fc.group.name or act_bone == '':
+                if fc.select:
+                    for key in keyframe_dirt:
+                        new_key = fc.keyframe_points.insert(context.scene.frame_current+keyframe_dirt[key]['pos'][0],value=keyframe_dirt[key]['pos'][1])
+                        new_key.handle_left = keyframe_dirt[key]['handle_left']
+                        new_key.handle_right = keyframe_dirt[key]['handle_right']
+
         self.report({'INFO'}, "我他妈当场喵喵喵?") 
         del keyframe_dirt
         return {'FINISHED'}
@@ -427,7 +467,9 @@ classes=(
     fcurve2keyframe,
     other_set_origin,
     other_export_tkey,
-    other_import_tkey
+    other_import_tkey,
+    other_bake_sound_T,
+    skinconverting
 )
 
 def register():

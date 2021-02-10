@@ -60,6 +60,9 @@ class TTR_PT_UI(bpy.types.Panel):
             row.operator('mi2bl.import_miobject')
             row = box.row()
             row.operator('mi2bl.import_mbmodel')
+            row = box.row()
+            row = box.row()
+            row.operator('mi2bl.skinconverting')
         
         if context.window_manager.mi2bl.notok_UI:
             row = layout.row()
@@ -85,6 +88,7 @@ class TTR_PT_UI(bpy.types.Panel):
             row.operator('mi2bl.other_dynamic_enable')
             row = layout.row()
             row.operator('mi2bl.object_center')
+            
             
 
 
