@@ -192,6 +192,7 @@ class MCPREP_OT_spawn_item_from_file(bpy.types.Operator, ImportHelper):
         bpy.ops.object.transform_apply(scale=True, location=False)
         bpy.ops.object.scale_uv(scale=self.scale_uvs, selected_only=False, skipUsage=True)
         #bpy.ops.object.mode_set(mode='OBJECT')
+        obj.location = bpy.context.scene.cursor.location
         return {'FINISHED'}
 
 

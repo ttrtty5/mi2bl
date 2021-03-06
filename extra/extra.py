@@ -3,6 +3,7 @@ from bpy_extras.io_utils import ExportHelper,ImportHelper
 import json, os
 from ..Mcprep.skin18217 import SkinConverting
 
+
 class skinconverting(bpy.types.Operator, ImportHelper):
     '''将1.7版本皮肤转换为1.8版本'''
     bl_idname = 'mi2bl.skinconverting'
@@ -455,6 +456,15 @@ class 测试用ops(bpy.types.Operator):
         self.report({'INFO'},str(teststr))
         return {'FINISHED'}
 
+class 测试用ops1(bpy.types.Operator):
+    bl_idname = 'mi2bl.other_test2'
+    bl_label = 'ops测试'
+
+    def execute(self, context):
+        #os.system(bpy.app.binary_path_python + ' -m pip install Pillow')
+        pass
+        return {'FINISHED'}
+
 classes=(
     other_cache_clean,
     生成动力学集合,
@@ -469,7 +479,8 @@ classes=(
     other_export_tkey,
     other_import_tkey,
     other_bake_sound_T,
-    skinconverting
+    skinconverting,
+    测试用ops1
 )
 
 def register():

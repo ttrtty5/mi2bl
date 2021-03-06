@@ -21,7 +21,7 @@ class 载入图片进行分割(bpy.types.Operator,ImportHelper):
     '''载入图片,将其分割成item'''
     bl_idname = 'mi2bl.item_cut_button'
     bl_label = '载入图片'
-    bl_options = {'INTERNAL'}
+    bl_options = {'INTERNAL',  'UNDO'}
     outside_item=[]#当前窗口内的icon集合
     image_list=[]#大图对象集合
     image_dict={}#通过大图名字获取索引
@@ -198,6 +198,18 @@ class spawn_item_from_image(bpy.types.Operator):
 
         obj.name=image_name + '_%s'%item_name
         obj.data.name=image_name + '_%s'%item_name
+        
+        # 获取当前视图角度,吸附到当前角度
+        # bpy.context.window_manager.windows[0].screen.areas[2].spaces[0].region_3d.view_rotation
+        
+        if context.space_data.type =='VIEW_3D':
+            pi4 = 0.7853981633974483
+            当前视图角度 = bpy.context.space_data.region_3d.view_rotation.to_euler('XYZ')
+            #bpy.context.object.rotation_euler = bpy.context.space_data.region_3d.view_rotation.to_euler()
+            # euler//pi4 无小数的浮点数
+            # (euler//pi4)%2) 是euler//pi4除2的余数
+            obj.rotation_euler = [(euler//pi4+(euler//pi4)%2)*pi4 for euler in 当前视图角度]
+        
         return {'FINISHED'}
 
 class spawn_item_from_image_pixelsize(bpy.types.Operator):
@@ -270,6 +282,13 @@ class spawn_item_from_image_pixelsize(bpy.types.Operator):
         obj.location = bpy.context.scene.cursor.location # 移动到3D游标上
         obj.name=image_name + '_%s'%item_name
         obj.data.name=image_name + '_%s'%item_name
+        
+        # 获取当前视图角度,吸附到当前角度
+        if context.space_data.type =='VIEW_3D':
+            pi4 = 0.7853981633974483
+            当前视图角度 = bpy.context.space_data.region_3d.view_rotation.to_euler('XYZ')
+            obj.rotation_euler = [(euler//pi4+(euler//pi4)%2)*pi4 for euler in 当前视图角度]
+        
         return {'FINISHED'}
 
 

@@ -16,7 +16,8 @@ bl_info = {
 import bpy
 from bpy_extras.io_utils import ExportHelper
 from bpy.props import StringProperty
-import importlib
+import importlib, os
+# os.system('chcp 65001')
 
 # 以下是拿来当吉祥物的函数,有用的全扔extra文件里了
 class TTR_do_1(bpy.types.Operator):
