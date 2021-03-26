@@ -22,6 +22,7 @@ class skinconverting(bpy.types.Operator, ImportHelper):
 class other_cache_clean(bpy.types.Operator):
     bl_idname = 'mi2bl.other_cache_clean'
     bl_label = '缓存清除'
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self,context):
         '''meshnum = 0
@@ -59,6 +60,7 @@ class other_set_origin(bpy.types.Operator):
     '''一次性脚本'''
     bl_idname = 'mi2bl.other_set_origin'
     bl_label = '设置曲线原点'
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self,context):
         bpy.ops.object.editmode_toggle()
@@ -74,6 +76,7 @@ class other_bake_sound_T(bpy.types.Operator,ImportHelper):
     '''rt'''
     bl_idname = 'mi2bl.other_bake_sound'
     bl_label = 'ttr烘焙曲线并添加预览'
+    bl_options = {'REGISTER', 'UNDO'}
     filter_glob: bpy.props.StringProperty(
         default="*.mp3",
         options={'HIDDEN'})
@@ -117,6 +120,7 @@ class other_import_tkey(bpy.types.Operator, ImportHelper):
     '''导出关键帧'''
     bl_idname = 'mi2bl.other_import_tkey'
     bl_label = 'ttr导入关键帧'
+    bl_options = {'REGISTER', 'UNDO'}
     #过滤其他文件，只选择*.Tkeyframe
     filter_glob: bpy.props.StringProperty(
         default="*.Tkeyframe",
@@ -145,6 +149,7 @@ class fcurve2keyframe(bpy.types.Operator):
     '''将选择通道上的函数曲线转为关键帧'''
     bl_idname = 'mi2bl.other_fcurve2keyframe'
     bl_label = '函数曲线转关键帧'
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self,context):
         if context.object == None:
@@ -172,6 +177,7 @@ class 生成动力学集合(bpy.types.Operator):
     # 先生成动力学物体集合
     bl_idname = 'mi2bl.other_spawn_dynamic_collections'
     bl_label = '生成动力学集合'
+    bl_options = {'REGISTER', 'UNDO'}
     def execute(self, context):
         bpy.context.view_layer.active_layer_collection = bpy.context.view_layer.layer_collection
         if "动力学物体" not in bpy.context.view_layer.layer_collection.children:
@@ -332,6 +338,7 @@ class ExportDataOperator(bpy.types.Operator):
 
         return {'FINISHED'} 
 
+# 大纲视图菜单额外按钮
 def add_ExportDataOperator_button(self, context):
     display_mode = context.space_data.display_mode
     print(bpy.context.blend_data.actions[:])
@@ -352,6 +359,7 @@ class 贴图重映射(bpy.types.Operator):
     '''检测是否有重复加载的相同路径的贴图.\n如有会被检测显示,确定后将删除.'''
     bl_idname = 'mi2bl.other_texture_remap'
     bl_label = '贴图重映射'
+    bl_options = {'REGISTER', 'UNDO'}
 
     img_templist = []
     # 奇怪的bug,invoke虽然先于enum_imglist运行，但enum_imglist内访问到的img_templist始终是[]
@@ -430,6 +438,7 @@ class 贴图重映射(bpy.types.Operator):
 class 物体居中空物体(bpy.types.Operator):
     bl_idname = 'mi2bl.object_center'
     bl_label = '物体居中空物体'
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         obj = bpy.context.object
@@ -442,10 +451,52 @@ class 物体居中空物体(bpy.types.Operator):
             
         return {'FINISHED'}
 
+
+class 坐标清零设父级(bpy.types.Operator):
+    bl_idname = 'mi2bl.parent_no_pos_set'
+    bl_label = '坐标清零设父级'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        act_obj = context.active_object
+        活动物体列表 = [o for o in context.selected_objects if (o!=act_obj)]
+        # set(bpy.context.selected_objects).difference(set([bpy.context.active_object])) 消耗较大
+        bpy.ops.object.parent_set(type='OBJECT', keep_transform=True)
+        #print(活动物体列表)
+        for obj in 活动物体列表:
+            a1 = obj.matrix_parent_inverse.translation
+            b1 = obj.location
+            c1 = [a1[i]+b1[i] for i in range(0,len(a1))]
+            obj.matrix_parent_inverse.translation = c1
+            obj.location = [0,0,0]
+        return {'FINISHED'}
+
+class 应用坐标到父级矩阵(bpy.types.Operator):
+    bl_idname = 'mi2bl.apply_matrix_parent'
+    bl_label = '应用坐标到父级矩阵'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        obj=context.object
+        a1 = obj.matrix_parent_inverse.translation
+        b1 = obj.location
+        c1 = [a1[i]+b1[i] for i in range(0,len(a1))]
+        obj.matrix_parent_inverse.translation = c1
+        obj.location = [0,0,0]
+        return {'FINISHED'}
+
+# 3d视图-父级菜单-额外按钮
+def add_parent_button(self, context):
+    self.layout.separator()
+    self.layout.operator('mi2bl.parent_no_pos_set')
+    self.layout.operator('mi2bl.apply_matrix_parent')
+
+
 ### 测试 ###
 class 测试用ops(bpy.types.Operator):
     bl_idname = 'mi2bl.other_test'
     bl_label = 'ops测试'
+    bl_options = {'REGISTER', 'UNDO'}
 
     # 借用位置
     img_templist = []
@@ -459,6 +510,7 @@ class 测试用ops(bpy.types.Operator):
 class 测试用ops1(bpy.types.Operator):
     bl_idname = 'mi2bl.other_test2'
     bl_label = 'ops测试'
+    bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         #os.system(bpy.app.binary_path_python + ' -m pip install Pillow')
@@ -480,17 +532,22 @@ classes=(
     other_import_tkey,
     other_bake_sound_T,
     skinconverting,
-    测试用ops1
+    测试用ops1,
+    坐标清零设父级,
+    应用坐标到父级矩阵
 )
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    # 额外菜单添加
     bpy.types.OUTLINER_MT_context_menu.append(add_ExportDataOperator_button)
+    bpy.types.VIEW3D_MT_object_parent.append(add_parent_button)
     bpy.types.GRAPH_MT_key.append(add_fcurve2keyframe)
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
     bpy.types.OUTLINER_MT_context_menu.remove(add_ExportDataOperator_button)
+    bpy.types.VIEW3D_MT_object_parent.remove(add_parent_button)
     bpy.types.GRAPH_MT_key.remove(add_fcurve2keyframe)
